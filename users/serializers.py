@@ -105,33 +105,31 @@ class SetNewPasswordSerializer(serializers.Serializer):
         fields = ['password', 'confirm_password', 'uuid', 'token']
     
     def validate(self, attrs):
+        uuid = attrs.get('uuid')
+        token = attrs.get('token')
+        password = attrs.get('password')
+        confirm_password = attrs.get('confirm_password')
+
+        if password != confirm_password:
+            raise serializers.ValidationError('Password must be match')
+
         try:
-            uuid = attrs.get('uuid')
-            token = attrs.get('token')
-            password = attrs.get('password')
-            confirm_password = attrs.get('confirm_password')
+            user_id = force_str(urlsafe_base64_decode(uuid))
+            user = User.objects.get(id=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError('The reset link is invalid', 401)
 
-            try:
-                user_id = force_str(urlsafe_base64_decode(uuid))
-                user = User.objects.get(id=user_id)
-            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-                raise serializers.ValidationError('The reset link is invalid', 401)
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                raise AuthenticationFailed('The reset link is invalid', 401)
-            
-            if password != confirm_password:
-                raise serializers.ValidationError('Password must be match')
-            
-            try:
-                validate_password(password, user=user)
-            except DjangoValidationError as e:
-                raise serializers.ValidationError({
-                    'password': list(e.messages)
-                })
-            return attrs
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            raise AuthenticationFailed('The reset link is invalid', 401)
+        
+        try:
+            validate_password(password, user=user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({
+                'password': list(e.messages)
+            })
+        return attrs
 
-        except Exception as e:
-            raise AuthenticationFailed(f"An error occurred: {str(e)}")
     def save(self, **kwargs):
         password = self.validated_data['password']
         uuid = self.validated_data['uuid']
