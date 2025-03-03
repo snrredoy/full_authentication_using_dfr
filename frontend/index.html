@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Login Test</title>
+    <!-- Google Platform Library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #1a73e8;
+        }
+
+        #response-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        pre {
+            text-align: left;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Login Test</h1>
+        <div id="google-signin-button"></div>
+        <div id="response-container" class="hidden">
+            <h3>Response:</h3>
+            <pre id="response-text"></pre>
+        </div>
+    </div>
+
+    <script>
+        const CLIENT_ID = '229345654321-5gucmg0rdhli2gafkdrsqu1dm85q0kf1.apps.googleusercontent.com'; // Replace with your Google Client ID
+        const API_URL = 'http://localhost:8000/api/google-login/'; // Your Django backend URL
+
+        function handleCredentialResponse(response) {
+            // Get the ID token from Google
+            const idToken = response.credential;
+            
+            // Send token to backend
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    access_token: idToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display response
+                const responseContainer = document.getElementById('response-container');
+                const responseText = document.getElementById('response-text');
+                
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseContainer.classList.remove('hidden');
+                
+                console.log('Backend response:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const responseContainer = document.getElementById('response-container');
+                const responseText = document.getElementById('response-text');
+                
+                responseText.textContent = `Error: ${error.message}`;
+                responseContainer.classList.remove('hidden');
+            });
+        }
+
+        window.onload = function() {
+            google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+
+            google.accounts.id.renderButton(
+                document.getElementById('google-signin-button'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: 250
+                }
+            );
+
+            google.accounts.id.prompt(); // Display One Tap prompt
+        };
+    </script>
+</body>
+</html>
