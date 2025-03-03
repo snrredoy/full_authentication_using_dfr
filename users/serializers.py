@@ -150,7 +150,7 @@ class LogoutSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         try:
-            token = RefreshToken(self.token)
+            token = RefreshToken(self.refresh_token)
             token.blacklist()
         except Exception as e:
             return serializers.ValidationError(str(e))

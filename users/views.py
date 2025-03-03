@@ -8,6 +8,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str , DjangoUnicodeDecodeError
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 # Create your views here.
@@ -167,5 +168,25 @@ class SetNewPasswordView(APIView):
             'status':status.HTTP_400_BAD_REQUEST,
             'success': False,
             'message': 'Password reset failed.',
+            'data': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({
+                'status':status.HTTP_200_OK,
+                'success': True,
+                'message': 'Logout successful.',
+                }, status=status.HTTP_200_OK)
+        return Response({
+            'status':status.HTTP_400_BAD_REQUEST,
+            'success': False,
+            'message': 'Logout failed.',
             'data': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
