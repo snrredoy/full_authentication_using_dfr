@@ -8,15 +8,13 @@ from rest_framework.exceptions import AuthenticationFailed
 
 class Google():
     @staticmethod
-    def validate(access_token):  # This is actually an ID token
+    def validate(access_token):  
         try:
-            # Verify ID token
             id_info = id_token.verify_oauth2_token(
                 access_token,
                 requests.Request(),
                 settings.GOOGLE_CLIENT_ID
             )
-            # Check issuer
             if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
                 raise ValueError('Wrong issuer')
             return id_info
@@ -30,10 +28,12 @@ def register_with_google(provider, email, first_name, last_name):
     if old_user.exists():
         if provider == old_user[0].auth_provider:
             register_user = authenticate(email=email, password=settings.GOOGLE_SECRET_KEY)
+            tokens = register_user.tokens()
             return {
                 'full_name': register_user.get_full_name(),
                 'email': register_user.email,
-                'tokens': register_user.tokens()
+                'refresh_token': str(tokens.get('refresh')),
+                'access_token': str(tokens.get('access')),
             }
         
         else:
